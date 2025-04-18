@@ -1,4 +1,4 @@
-const CACHE_NAME = 'asciitex-cache-v1';
+const CACHE_NAME = 'asciitex-cache-v2';
 const ASSETS = [
   './',
   'index.html',
