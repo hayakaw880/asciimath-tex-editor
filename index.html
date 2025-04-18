@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <title>ASCII→TeX 数式エディタ with スクショ機能</title>
+    <!-- KaTeX の CSS -->
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
+    />
+    <style>
+      :root {
+        --bg-color: #eee;
+        --text-color: #111;
+        --input-bg: #fff;
+        --input-text: #111;
+        --button-bg: #ddd;
+        --button-hover-bg: #ccc;
+        --preview-bg: #f7f7f7;
+      }
+      body.dark-mode {
+        --bg-color: #111;
+        --text-color: #eee;
+        --input-bg: #222;
+        --input-text: #eee;
+        --button-bg: #333;
+        --button-hover-bg: #444;
+        --preview-bg: #222;
+      }
+
+      body {
+        background: var(--bg-color);
+        color: var(--text-color);
+        font-family: sans-serif;
+        padding: 2rem;
+        transition: background 0.3s, color 0.3s;
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+      }
+      .palette {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+      }
+      .palette button {
+        background: var(--button-bg);
+        color: var(--text-color);
+        border: none;
+        border-radius: 4px;
+        padding: 0.4rem 0.6rem;
+        cursor: pointer;
+        font-size: 1.1rem;
+        transition: background 0.2s;
+      }
+      .palette button:hover {
+        background: var(--button-hover-bg);
+      }
+      textarea {
+        width: 100%;
+        height: 6rem;
+        font-size: 1rem;
+        padding: 0.5rem;
+        background: var(--input-bg);
+        color: var(--input-text);
+        border: 1px solid #888;
+        border-radius: 4px;
+        resize: vertical;
+        transition: background 0.3s, color 0.3s;
+      }
+      .buttons {
+        margin-top: 0.5rem;
+      }
+      .buttons button {
+        margin: 0.3rem 0.5rem 0 0;
+        padding: 0.5rem 1rem;
+        background: var(--button-bg);
+        color: var(--text-color);
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+      .buttons button:hover {
+        background: var(--button-hover-bg);
+      }
+      /* プレビュー折返し禁止＋横スクロール */
+      #preview {
+        margin-top: 1rem;
+        background: var(--preview-bg);
+        padding: 1rem;
+        border-radius: 4px;
+        min-height: 4rem;
+        overflow-x: auto;
+        white-space: nowrap;
+        transition: background 0.3s;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>ASCII→TeX 数式エディタ</h1>
+
+      <div class="palette">
+        <button data-ascii="sum_(i=1)^n ">Σ</button>
+        <button data-ascii="prod_(i=1)^n ">∏</button>
+        <button data-ascii="int_0^1 ">∫</button>
+        <button data-ascii="partial">∂</button>
+        <button data-ascii="nabla">∇</button>
+        <button data-ascii="infty">∞</button>
+        <button data-ascii="alpha">α</button>
+        <button data-ascii="beta">β</button>
+        <button data-ascii="gamma">γ</button>
+        <button data-ascii="pi">π</button>
+      </div>
+
+      <textarea
+        id="input"
+        placeholder="例: a*b + sqrt(x^2+y^2)
+a/b + sum_(i=1)^n i^2"
+      ></textarea>
+
+      <div class="buttons">
+        <button id="copyAsciiBtn">Copy AsciiMath</button>
+        <button id="copyTeXBtn">Copy TeX</button>
+        <button id="copyMdBtn">Copy Markdown</button>
+        <button id="copyHtmlBtn">Copy HTML</button>
+        <button id="screenshotBtn">プレビューをスクショ</button>
+        <button id="themeToggle">テーマ切替</button>
+      </div>
+
+      <div id="preview"></div>
+    </div>
+
+    <!-- ライブラリ読み込み -->
+    <script src="https://unpkg.com/asciimath2tex@1.5.0/dist/asciimath2tex.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <script>
+      const input         = document.getElementById('input');
+      const preview       = document.getElementById('preview');
+      const copyAsciiBtn  = document.getElementById('copyAsciiBtn');
+      const copyTeXBtn    = document.getElementById('copyTeXBtn');
+      const copyMdBtn     = document.getElementById('copyMdBtn');
+      const copyHtmlBtn   = document.getElementById('copyHtmlBtn');
+      const screenshotBtn = document.getElementById('screenshotBtn');
+      const themeToggle   = document.getElementById('themeToggle');
+      const paletteBtns   = document.querySelectorAll('.palette button');
+
+      const parser = new AsciiMathParser();
+      let lastTex = '';
+
+      function render() {
+        let ascii = input.value.trim().replace(/\n/g, '\\\\');
+        let tex   = parser.parse(ascii).replace(/\\cdot/g, '\\times');
+        lastTex = tex;
+        preview.innerHTML = katex.renderToString(tex, {
+          throwOnError: false,
+          displayMode: true
+        });
+      }
+
+      // シンボル挿入
+      function insertAtCursor(el, text) {
+        const [s,e] = [el.selectionStart, el.selectionEnd];
+        el.value = el.value.slice(0,s) + text + el.value.slice(e);
+        el.setSelectionRange(s+text.length, s+text.length);
+        el.focus();
+        render();
+      }
+      paletteBtns.forEach(btn =>
+        btn.addEventListener('click', () =>
+          insertAtCursor(input, btn.dataset.ascii)
+        )
+      );
+
+      // コピー系
+      copyAsciiBtn.addEventListener('click', () =>
+        navigator.clipboard.writeText(input.value).then(() => alert('AsciiMath コピーしたで！'))
+      );
+      copyTeXBtn.addEventListener('click', () =>
+        navigator.clipboard.writeText(lastTex).then(() => alert('TeX コードコピーしたで！'))
+      );
+      copyMdBtn.addEventListener('click', () =>
+        navigator.clipboard.writeText(`$$\n${lastTex}\n$$`).then(() => alert('Markdown コピーしたで！'))
+      );
+      copyHtmlBtn.addEventListener('click', () =>
+        navigator.clipboard.writeText(preview.innerHTML).then(() => alert('HTML コピーしたで！'))
+      );
+
+      // スクリーンショット
+      screenshotBtn.addEventListener('click', () => {
+        html2canvas(preview, { backgroundColor: null }).then(canvas => {
+          canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'preview.png';
+            a.click();
+            URL.revokeObjectURL(url);
+          });
+        });
+      });
+
+      // テーマ切替
+      function applyTheme(theme) {
+        document.body.classList.toggle('dark-mode', theme==='dark');
+        localStorage.setItem('theme', theme);
+      }
+      themeToggle.addEventListener('click', () => {
+        const isDark = document.body.classList.toggle('dark-mode');
+        localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      });
+      window.addEventListener('load', () => {
+        applyTheme(localStorage.getItem('theme')||'dark');
+      });
+
+      // 自動レンダリング
+      input.addEventListener('input', render);
+      render();
+    </script>
+  </body>
+</html>
