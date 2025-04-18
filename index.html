@@ -2,12 +2,16 @@
 <html lang="ja">
   <head>
     <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ASCII→TeX 数式エディタ with スクショ機能</title>
-    <!-- KaTeX の CSS -->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css"
-    />
+
+    <!-- PWA 用 manifest -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#111" />
+
+    <!-- ローカルに置いた KaTeX CSS -->
+    <link rel="stylesheet" href="css/katex.min.css" />
+
     <style>
       :root {
         --bg-color: #eee;
@@ -86,7 +90,6 @@
       .buttons button:hover {
         background: var(--button-hover-bg);
       }
-      /* プレビュー折返し禁止＋横スクロール */
       #preview {
         margin-top: 1rem;
         background: var(--preview-bg);
@@ -118,8 +121,7 @@
 
       <textarea
         id="input"
-        placeholder="例: a*b + sqrt(x^2+y^2)
-a/b + sum_(i=1)^n i^2"
+        placeholder="例: a*b + sqrt(x^2+y^2)\na/b + sum_(i=1)^n i^2"
       ></textarea>
 
       <div class="buttons">
@@ -134,27 +136,28 @@ a/b + sum_(i=1)^n i^2"
       <div id="preview"></div>
     </div>
 
-    <!-- ライブラリ読み込み -->
-    <script src="https://unpkg.com/asciimath2tex@1.5.0/dist/asciimath2tex.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <!-- ローカルライブラリ読み込み -->
+    <script src="js/asciimath2tex.umd.js"></script>
+    <script src="js/katex.min.js"></script>
+    <script src="js/html2canvas.min.js"></script>
+
     <script>
-      const input         = document.getElementById('input');
-      const preview       = document.getElementById('preview');
-      const copyAsciiBtn  = document.getElementById('copyAsciiBtn');
-      const copyTeXBtn    = document.getElementById('copyTeXBtn');
-      const copyMdBtn     = document.getElementById('copyMdBtn');
-      const copyHtmlBtn   = document.getElementById('copyHtmlBtn');
+      const input = document.getElementById('input');
+      const preview = document.getElementById('preview');
+      const copyAsciiBtn = document.getElementById('copyAsciiBtn');
+      const copyTeXBtn = document.getElementById('copyTeXBtn');
+      const copyMdBtn = document.getElementById('copyMdBtn');
+      const copyHtmlBtn = document.getElementById('copyHtmlBtn');
       const screenshotBtn = document.getElementById('screenshotBtn');
-      const themeToggle   = document.getElementById('themeToggle');
-      const paletteBtns   = document.querySelectorAll('.palette button');
+      const themeToggle = document.getElementById('themeToggle');
+      const paletteBtns = document.querySelectorAll('.palette button');
 
       const parser = new AsciiMathParser();
       let lastTex = '';
 
       function render() {
-        let ascii = input.value.trim().replace(/\n/g, '\\\\');
-        let tex   = parser.parse(ascii).replace(/\\cdot/g, '\\times');
+        let ascii = input.value.trim().replace(/\n/g, '\\');
+        let tex = parser.parse(ascii).replace(/\\cdot/g, '\\times');
         lastTex = tex;
         preview.innerHTML = katex.renderToString(tex, {
           throwOnError: false,
@@ -162,11 +165,10 @@ a/b + sum_(i=1)^n i^2"
         });
       }
 
-      // シンボル挿入
       function insertAtCursor(el, text) {
-        const [s,e] = [el.selectionStart, el.selectionEnd];
-        el.value = el.value.slice(0,s) + text + el.value.slice(e);
-        el.setSelectionRange(s+text.length, s+text.length);
+        const [s, e] = [el.selectionStart, el.selectionEnd];
+        el.value = el.value.slice(0, s) + text + el.value.slice(e);
+        el.setSelectionRange(s + text.length, s + text.length);
         el.focus();
         render();
       }
@@ -176,7 +178,6 @@ a/b + sum_(i=1)^n i^2"
         )
       );
 
-      // コピー系
       copyAsciiBtn.addEventListener('click', () =>
         navigator.clipboard.writeText(input.value).then(() => alert('AsciiMath コピーしたで！'))
       );
@@ -190,7 +191,6 @@ a/b + sum_(i=1)^n i^2"
         navigator.clipboard.writeText(preview.innerHTML).then(() => alert('HTML コピーしたで！'))
       );
 
-      // スクリーンショット
       screenshotBtn.addEventListener('click', () => {
         html2canvas(preview, { backgroundColor: null }).then(canvas => {
           canvas.toBlob(blob => {
@@ -204,9 +204,8 @@ a/b + sum_(i=1)^n i^2"
         });
       });
 
-      // テーマ切替
       function applyTheme(theme) {
-        document.body.classList.toggle('dark-mode', theme==='dark');
+        document.body.classList.toggle('dark-mode', theme === 'dark');
         localStorage.setItem('theme', theme);
       }
       themeToggle.addEventListener('click', () => {
@@ -214,12 +213,23 @@ a/b + sum_(i=1)^n i^2"
         localStorage.setItem('theme', isDark ? 'dark' : 'light');
       });
       window.addEventListener('load', () => {
-        applyTheme(localStorage.getItem('theme')||'dark');
+        applyTheme(localStorage.getItem('theme') || 'dark');
       });
 
-      // 自動レンダリング
       input.addEventListener('input', render);
       render();
+    </script>
+
+    <!-- Service Worker の登録 -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker
+            .register('service-worker.js')
+            .then(reg => console.log('SW registered:', reg.scope))
+            .catch(err => console.error('SW failed:', err));
+        });
+      }
     </script>
   </body>
 </html>
