@@ -1,0 +1,103 @@
+/* ===== カラーテーマ ===== */
+:root {
+  --bg-color: #eee;
+  --text-color: #111;
+  --input-bg: #fff;
+  --input-text: #111;
+  --button-bg: #ddd;
+  --button-hover-bg: #ccc;
+  --preview-bg: #f7f7f7;
+}
+
+body.dark-mode {
+  --bg-color: #111;
+  --text-color: #eee;
+  --input-bg: #222;
+  --input-text: #eee;
+  --button-bg: #333;
+  --button-hover-bg: #444;
+  --preview-bg: #222;
+}
+
+/* ===== 全体レイアウト ===== */
+body {
+  background: var(--bg-color);
+  color: var(--text-color);
+  font-family: sans-serif;
+  padding: 2rem;
+  transition: background 0.3s, color 0.3s;
+}
+
+.container {
+  max-width: 600px;
+  margin: auto;
+}
+
+/* ===== パレット ===== */
+.palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.palette button {
+  background: var(--button-bg);
+  color: var(--text-color);
+  border: none;
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: background 0.2s;
+}
+
+.palette button:hover {
+  background: var(--button-hover-bg);
+}
+
+/* ===== テキストエリア ===== */
+textarea {
+  width: 100%;
+  height: 6rem;
+  font-size: 1rem;
+  padding: 0.5rem;
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid #888;
+  border-radius: 4px;
+  resize: vertical;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ===== ボタン群 ===== */
+.buttons {
+  margin-top: 0.5rem;
+}
+
+.buttons button {
+  margin: 0.3rem 0.5rem 0 0;
+  padding: 0.5rem 1rem;
+  background: var(--button-bg);
+  color: var(--text-color);
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.buttons button:hover {
+  background: var(--button-hover-bg);
+}
+
+/* ===== プレビュー ===== */
+#preview {
+  margin-top: 1rem;
+  background: var(--preview-bg);
+  padding: 1rem;
+  border-radius: 4px;
+  min-height: 4rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  transition: background 0.3s;
+}
